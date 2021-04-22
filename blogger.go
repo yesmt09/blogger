@@ -156,9 +156,10 @@ func GetLogid() int {
 func (l *BLogger) Reset() {
 	l.baseList = map[string]string{}
 	l.baseLog = []map[string]string{}
+	l.logMessages = []logModel{}
 }
 
-func (l BLogger) Flush() {
+func (l *BLogger) Flush() {
 	var content = ""
 	var wfContent = ""
 	for i := 0; i < len(l.logMessages); i++ {
@@ -173,5 +174,6 @@ func (l BLogger) Flush() {
 		}
 	}
 	l.writeLog(content)
-	l.writeLog(content, l.filepath+".wf")
+	l.writeLog(wfContent, l.filepath+".wf")
+	l.logMessages = []logModel{}
 }
