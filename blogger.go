@@ -42,26 +42,6 @@ type BLogger struct {
 }
 
 func NewBlogger(filepath string, level int) BLogger {
-	if _, err := os.Lstat(filepath); os.IsNotExist(err) {
-		f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDONLY, 0644)
-		if err != nil {
-			panic("err")
-		}
-		f.Close()
-		f, err = os.OpenFile(filepath+".wf", os.O_CREATE|os.O_RDONLY, 0644)
-		if err != nil {
-			panic("err")
-		}
-		f.Close()
-	}
-	var wfFilePath = filepath + ".wf"
-	if _, err := os.Lstat(wfFilePath); os.IsNotExist(err) {
-		f, err := os.OpenFile(wfFilePath, os.O_CREATE|os.O_RDONLY, 0644)
-		if err != nil {
-			panic("err")
-		}
-		f.Close()
-	}
 	d,_:=os.Getwd()
 	return BLogger{
 		filepath:    filepath,
@@ -72,6 +52,16 @@ func NewBlogger(filepath string, level int) BLogger {
 		logModel:    logModel{
 			rootPath: d + "/",
 		},
+	}
+}
+
+func createLogFile(filepath string) {
+	if _, err := os.Lstat(filepath); os.IsNotExist(err) {
+		f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDONLY, 0644)
+		if err != nil {
+			panic("err")
+		}
+		defer f.Close()
 	}
 }
 
@@ -94,7 +84,6 @@ func (l *BLogger) Trace(message interface{}) {
 	if l.level > L_TRACE {
 		return
 	}
-	l.level = 5
 	m := l.logModel.AddLog(fmt.Sprintf("%v", message), L_TRACE)
 	l.logMessages = append(l.logMessages, m)
 
@@ -128,7 +117,6 @@ func (l *BLogger) Fatal(message interface{}) {
 	if l.level > L_FATAL {
 		return
 	}
-	l.level = 4
 	m := l.logModel.AddLog(fmt.Sprintf("%v", message), L_FATAL)
 	l.logMessages = append(l.logMessages, m)
 }
@@ -139,6 +127,7 @@ func (l BLogger) writeLog(content string, filepath ...string) {
 	if len(filepath) != 0 {
 		logpath = filepath[0]
 	}
+	createLogFile(logpath)
 	f, err := os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	defer f.Close()
 	defer l.mu.Unlock()
