@@ -33,24 +33,21 @@ var LevelMap = map[string]int{
 
 type BLogger struct {
 	mu          sync.Mutex
-	filepath    string
-	level       int
+	bFile 		BFile
 	baseList    map[string]string
 	baseLog		[]map[string]string
 	logMessages []logModel
 	logModel    logModel
 }
 
-func NewBlogger(filepath string, level int) BLogger {
-	d,_:=os.Getwd()
+func NewBlogger(bFile BFile) BLogger {
 	return BLogger{
-		filepath:    filepath,
-		level:       level,
+		bFile: bFile,
 		baseList:    map[string]string{},
 		baseLog: 	[]map[string]string{},
 		logMessages: []logModel{},
 		logModel:    logModel{
-			rootPath: d + "/",
+			rootPath: bFile.dir + "/",
 		},
 	}
 }
@@ -81,7 +78,7 @@ func (l *BLogger) AddBase(key string, value string) {
 }
 
 func (l *BLogger) Trace(message interface{}) {
-	if l.level > L_TRACE {
+	if l.bFile.level > L_TRACE {
 		return
 	}
 	m := l.logModel.AddLog(fmt.Sprintf("%v", message), L_TRACE)
@@ -90,7 +87,7 @@ func (l *BLogger) Trace(message interface{}) {
 }
 
 func (l *BLogger) Debug(message interface{}) {
-	if l.level > L_DEBUG {
+	if l.bFile.level > L_DEBUG {
 		return
 	}
 	m := l.logModel.AddLog(fmt.Sprintf("%v", message), L_DEBUG)
@@ -98,7 +95,7 @@ func (l *BLogger) Debug(message interface{}) {
 }
 
 func (l *BLogger) Info(message interface{}) {
-	if l.level > L_INFO {
+	if l.bFile.level > L_INFO {
 		return
 	}
 	m := l.logModel.AddLog(fmt.Sprintf("%v", message), L_INFO)
@@ -106,7 +103,7 @@ func (l *BLogger) Info(message interface{}) {
 }
 
 func (l *BLogger) Warning(message interface{}) {
-	if l.level > L_WARNING {
+	if l.bFile.level > L_WARNING {
 		return
 	}
 	m := l.logModel.AddLog(fmt.Sprintf("%v", message), L_WARNING)
@@ -114,7 +111,7 @@ func (l *BLogger) Warning(message interface{}) {
 }
 
 func (l *BLogger) Fatal(message interface{}) {
-	if l.level > L_FATAL {
+	if l.bFile.level > L_FATAL {
 		return
 	}
 	m := l.logModel.AddLog(fmt.Sprintf("%v", message), L_FATAL)
@@ -123,7 +120,7 @@ func (l *BLogger) Fatal(message interface{}) {
 
 func (l BLogger) writeLog(content string, filepath ...string) {
 	l.mu.Lock()
-	var logpath = l.filepath
+	var logpath = l.bFile.filePath
 	if len(filepath) != 0 {
 		logpath = filepath[0]
 	}
@@ -151,10 +148,12 @@ func (l *BLogger) Reset() {
 func (l *BLogger) Flush() {
 	var content = ""
 	var wfContent = ""
-	for i := 0; i < len(l.logMessages); i++ {
+	for i := 0; i <= len(l.logMessages)-1; i++ {
 		c := fmt.Sprintf("[%v][%v]", l.logMessages[i].timestamp, strings.ToUpper(levels[l.logMessages[i].level]))
-		for _, v := range l.baseLog {
-			c = fmt.Sprintf("%v[%v:%v]", c, v["key"], v["value"])
+		if len(l.baseLog) != 0 {
+			for _, v := range l.baseLog {
+				c = fmt.Sprintf("%v[%v:%v]", c, v["key"], v["value"])
+			}
 		}
 		c = fmt.Sprintf("%v[%v:%v] %v\n", c, l.logMessages[i].funFilePath, l.logMessages[i].line, l.logMessages[i].message)
 		content = content + c
@@ -163,6 +162,6 @@ func (l *BLogger) Flush() {
 		}
 	}
 	l.writeLog(content)
-	l.writeLog(wfContent, l.filepath+".wf")
+	l.writeLog(wfContent, l.bFile.filePath+".wf")
 	l.logMessages = []logModel{}
 }

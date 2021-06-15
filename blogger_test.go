@@ -1,6 +1,7 @@
 package blogger
 
 import (
+	"github.com/pkg/profile"
 	"sync"
 	"testing"
 )
@@ -8,11 +9,13 @@ import (
 var wg sync.WaitGroup
 
 func TestNewBlogger(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	bFile := NewBFile("/tmp/test.log", L_INFO)
+	defer profile.Start().Stop()
+	for i := 0; i < 2000; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			blogger := NewBlogger("/tmp/test.log", L_DEBUG)
+			blogger := NewBlogger(bFile)
 			blogger.AddBase("ip", "192.168.1.1")
 			blogger.RequestLogid()
 			blogger.Info("info")
